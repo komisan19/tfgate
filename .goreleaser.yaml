@@ -6,7 +6,7 @@ before:
 
 builds:
   - id: tfiam
-    main: ./cmd/tfiam
+    main: ./tfiam
     binary: tfiam
     env:
       - CGO_ENABLED=0
