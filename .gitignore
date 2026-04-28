@@ -1,0 +1,7 @@
+/tfiam
+/bin/
+*.test
+.DS_Store
+plan.json
+tfplan
+README.ja.md
