@@ -35,6 +35,34 @@ terraform show -json tfplan > plan.json
 tfgate check plan.json
 ```
 
+### Flags
+
+```
+tfgate [--version] <command> [flags] [args]
+
+Global Flags:
+  --version         Print version and exit
+
+tfgate check [flags] <plan.json>
+
+  --format string   Output format: text or json (default "text")
+  --profile string  AWS shared config profile (overrides AWS_PROFILE)
+  --region string   AWS region
+```
+
+### Examples
+
+```bash
+# JSON output (useful for programmatic processing)
+tfgate check --format json plan.json | jq .
+
+# Use a specific AWS profile and region
+tfgate check --profile staging --region us-east-1 plan.json
+
+# Print version
+tfgate --version
+```
+
 ## CI integration
 
 Example GitHub Actions step:
