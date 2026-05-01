@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 )
 
@@ -13,6 +14,10 @@ const (
 	StatusOK      ResultStatus = "ok"
 	StatusDenied  ResultStatus = "denied"
 	StatusWarning ResultStatus = "warning"
+	colorReset                 = "\033[0m"
+	colorGreen                 = "\033[32m"
+	colorRed                   = "\033[31m"
+	colorYellow                = "\033[33m"
 )
 
 type Result struct {
@@ -23,40 +28,6 @@ type Result struct {
 	Required     []string
 	Missing      []string
 	Message      string
-}
-
-func WriteText(w io.Writer, principalARN string, totalChanges int, results []Result) error {
-	if _, err := fmt.Fprintf(w, "Current principal: %s\n", principalARN); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(w, "Loaded %d resource changes\n", totalChanges); err != nil {
-		return err
-	}
-
-	for _, r := range results {
-		switch r.Status {
-		case StatusOK:
-			if _, err := fmt.Fprintf(w, "✓ %s (%s) — OK\n", r.Address, r.Operation); err != nil {
-				return err
-			}
-		case StatusDenied:
-			if _, err := fmt.Fprintf(w, "✗ %s (%s)\n    Missing: %s\n", r.Address, r.Operation, strings.Join(r.Missing, ", ")); err != nil {
-				return err
-			}
-		case StatusWarning:
-			if r.Operation != "" {
-				if _, err := fmt.Fprintf(w, "⚠ %s (%s): %s\n", r.Address, r.Operation, r.Message); err != nil {
-					return err
-				}
-			} else {
-				if _, err := fmt.Fprintf(w, "⚠ %s: %s\n", r.Address, r.Message); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
 }
 
 type jsonReport struct {
@@ -73,6 +44,53 @@ type jsonResult struct {
 	Required     []string `json:"required,omitempty"`
 	Missing      []string `json:"missing,omitempty"`
 	Message      string   `json:"message,omitempty"`
+}
+
+func WriteText(w io.Writer, principalARN string, totalChanges int, results []Result, color bool) error {
+	useColor := color && isTerminal(w)
+
+	colorize := func(code, text string) string {
+		if !useColor {
+			return text
+		}
+		return code + text + colorReset
+	}
+
+	if _, err := fmt.Fprintf(w, "Current principal: %s\n", principalARN); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, "Loaded %d resource changes\n", totalChanges); err != nil {
+		return err
+	}
+
+	for _, r := range results {
+		var line string
+		switch r.Status {
+		case StatusOK:
+			line = colorize(colorGreen, fmt.Sprintf("✓ %s (%s) — OK", r.Address, r.Operation))
+		case StatusDenied:
+			line = colorize(colorRed, fmt.Sprintf("✗ %s (%s)", r.Address, r.Operation))
+		case StatusWarning:
+			if r.Operation != "" {
+				line = colorize(colorYellow, fmt.Sprintf("⚠ %s (%s): %s", r.Address, r.Operation, r.Message))
+			} else {
+				line = colorize(colorYellow, fmt.Sprintf("⚠ %s: %s", r.Address, r.Message))
+			}
+		}
+
+		if _, err := fmt.Fprintln(w, line); err != nil {
+			return err
+		}
+
+		if r.Status == StatusDenied && len(r.Missing) > 0 {
+			missing := "    Missing: " + strings.Join(r.Missing, ", ")
+			if _, err := fmt.Fprintln(w, missing); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func WriteJSON(w io.Writer, principalARN string, totalChanges int, results []Result) error {
@@ -102,6 +120,14 @@ func HasFailure(results []Result) bool {
 		if r.Status == StatusDenied {
 			return true
 		}
+	}
+	return false
+}
+
+func isTerminal(w io.Writer) bool {
+	if f, ok := w.(*os.File); ok {
+		fi, _ := f.Stat()
+		return (fi.Mode() & os.ModeCharDevice) != 0
 	}
 	return false
 }

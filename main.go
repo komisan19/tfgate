@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/komisan19/tfgate/internal/iamrules"
@@ -49,7 +50,7 @@ func main() {
 	case "check":
 		runCheck(args[1:])
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[0])
+		slog.Error("unknown command", "cmd", args[0])
 		globalFlags.Usage()
 		os.Exit(2)
 	}
@@ -80,7 +81,7 @@ func runCheck(args []string) {
 	}
 
 	if *format != "text" && *format != "json" {
-		fmt.Fprintf(os.Stderr, "invalid --format %q: must be text or json\n", *format)
+		slog.Error("invalid --format value", "value", *format)
 		os.Exit(2)
 	}
 
@@ -92,13 +93,13 @@ func runCheck(args []string) {
 		Region:  *region,
 	})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
+		slog.Error("init simulator", "err", err)
 		os.Exit(2)
 	}
 
 	p, err := plan.Load(planPath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
+		slog.Error("load plan", "err", err)
 		os.Exit(2)
 	}
 
@@ -132,7 +133,13 @@ func runCheck(args []string) {
 				continue
 			}
 
-			actions := iamrules.Resolve(rule)
+			changedKeys, err := rc.Change.ChangedKeys()
+			if err != nil {
+				slog.Warn("no rule registered", "resource", rc.Type, "op", op)
+				continue
+			}
+
+			actions := iamrules.Resolve(rule, op, changedKeys)
 			_, denied, err := client.Simulate(ctx, actions)
 			if err != nil {
 				results = append(results, report.Result{
@@ -171,10 +178,10 @@ func runCheck(args []string) {
 	case "json":
 		writeErr = report.WriteJSON(os.Stdout, client.CallerARN(), len(p.ResourceChanges), results)
 	default:
-		writeErr = report.WriteText(os.Stdout, client.CallerARN(), len(p.ResourceChanges), results)
+		writeErr = report.WriteText(os.Stdout, client.CallerARN(), len(p.ResourceChanges), results, true)
 	}
 	if writeErr != nil {
-		fmt.Fprintln(os.Stderr, "error:", writeErr)
+		slog.Error("write report", "err", writeErr)
 		os.Exit(2)
 	}
 

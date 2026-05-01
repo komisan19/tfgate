@@ -6,11 +6,14 @@ type Operation string
 const (
 	OpCreate Operation = "create"
 	OpDelete Operation = "delete"
+	OpUpdate Operation = "update"
 )
 
 // Rule is an IAM action requirement for one resource type × one operation.
 type Rule struct {
-	BaseActions []string
+	BaseActions       []string
+	UpdateActions     []string
+	ConditinalActions map[string][]string
 }
 
 // registry is inner dictionary.
@@ -40,6 +43,25 @@ func Lookup(resourceType string, op Operation) (Rule, bool) {
 }
 
 // Resolve function returns a list of necessary actions from the Rule.
-func Resolve(rule Rule) []string {
+func Resolve(rule Rule, op Operation, changedKeys []string) []string {
+	seen := map[string]bool{}
+	var result []string
+
+	add := func(actions []string) {
+		for _, a := range actions {
+			if !seen[a] {
+				seen[a] = true
+				result = append(result, a)
+			}
+		}
+	}
+
+	switch op {
+	case OpUpdate:
+		add(rule.UpdateActions)
+	default:
+		add(rule.BaseActions)
+	}
+
 	return rule.BaseActions
 }
