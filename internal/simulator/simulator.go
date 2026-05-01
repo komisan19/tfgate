@@ -17,8 +17,20 @@ type Client struct {
 	callerARN string
 }
 
-func New(ctx context.Context) (*Client, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+type Options struct {
+	Profile string
+	Region  string
+}
+
+func New(ctx context.Context, opts Options) (*Client, error) {
+	var loadOpts []func(*config.LoadOptions) error
+	if opts.Profile != "" {
+		loadOpts = append(loadOpts, config.WithSharedConfigProfile(opts.Profile))
+	}
+	if opts.Region != "" {
+		loadOpts = append(loadOpts, config.WithRegion(opts.Region))
+	}
+	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("load AWS config: %w", err)
 	}
