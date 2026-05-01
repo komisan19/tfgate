@@ -20,4 +20,16 @@ func init() {
 			"ec2:DescribeInstances",
 		},
 	})
+
+	register("aws_instance", OpUpdate, Rule{
+		UpdateActions: []string{"ec2:DescribeInstances"},
+		ConditionalActions: map[string][]string{
+			"instance_type":        {"ec2:ModifyInstanceAttribute", "ec2:StopInstances", "ec2:StartInstances"},
+			"tags":                 {"ec2:CreateTags", "ec2:DeleteTags"},
+			"security_groups":      {"ec2:ModifyInstanceAttribute"},
+			"ebs_optimized":        {"ec2:ModifyInstanceAttribute"},
+			"user_data":            {"ec2:ModifyInstanceAttribute", "ec2:StopInstances", "ec2:StartInstances"},
+			"iam_instance_profile": {"ec2:AssociateIamInstanceProfile", "ec2:DisassociateIamInstanceProfile"},
+		},
+	})
 }

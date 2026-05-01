@@ -199,12 +199,13 @@ func determineOps(actions []string) (ops []iamrules.Operation, reason string) {
 		case "delete":
 			return []iamrules.Operation{iamrules.OpDelete}, ""
 		case "update":
-			return nil, "update not supported in v0.1"
+			return []iamrules.Operation{iamrules.OpUpdate}, ""
 		case "no-op", "read":
 			return nil, ""
 		default:
 			return nil, fmt.Sprintf("unknown action: %s", actions[0])
 		}
+
 	case len(actions) == 2:
 		set := map[string]bool{actions[0]: true, actions[1]: true}
 		if set["create"] && set["delete"] {

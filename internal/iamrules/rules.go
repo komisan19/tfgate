@@ -11,9 +11,9 @@ const (
 
 // Rule is an IAM action requirement for one resource type × one operation.
 type Rule struct {
-	BaseActions       []string
-	UpdateActions     []string
-	ConditinalActions map[string][]string
+	BaseActions        []string
+	UpdateActions      []string
+	ConditionalActions map[string][]string
 }
 
 // registry is inner dictionary.
@@ -63,5 +63,11 @@ func Resolve(rule Rule, op Operation, changedKeys []string) []string {
 		add(rule.BaseActions)
 	}
 
-	return rule.BaseActions
+	for _, key := range changedKeys {
+		if actions, ok := rule.ConditionalActions[key]; ok {
+			add(actions)
+		}
+	}
+
+	return result
 }
