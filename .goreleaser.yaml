@@ -5,9 +5,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: tfiam
+  - id: tfgate
     main: .
-    binary: tfiam
+    binary: tfgate
     env:
       - CGO_ENABLED=0
     goos:
@@ -24,7 +24,7 @@ builds:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - id: tfiam
+  - id: tfgate
     name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_

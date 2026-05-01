@@ -1,4 +1,4 @@
-module github.com/komisan19/tfiam
+module github.com/komisan19/tfgate
 
 go 1.25.5
 

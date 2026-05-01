@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/komisan19/tfiam/internal/iamrules"
-	"github.com/komisan19/tfiam/internal/plan"
-	"github.com/komisan19/tfiam/internal/report"
-	"github.com/komisan19/tfiam/internal/simulator"
+	"github.com/komisan19/tfgate/internal/iamrules"
+	"github.com/komisan19/tfgate/internal/plan"
+	"github.com/komisan19/tfgate/internal/report"
+	"github.com/komisan19/tfgate/internal/simulator"
 )
 
 func main() {
 	if len(os.Args) < 3 || os.Args[1] != "check" {
-		fmt.Fprintln(os.Stderr, "usage: tfiam check <plan.json>")
+		fmt.Fprintln(os.Stderr, "usage: tfgate check <plan.json>")
 		os.Exit(2)
 	}
 
