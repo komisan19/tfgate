@@ -1,7 +1,6 @@
-/tfiam
 /bin/
 *.test
 .DS_Store
 plan.json
-tfplan
+tfgate
 README.ja.md
