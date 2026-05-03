@@ -20,7 +20,7 @@ func init() {
 	})
 
 	register("aws_iam_role", OpUpdate, Rule{
-		BaseActions: []string{
+		UpdateActions: []string{
 			"iam:GetRole",
 		},
 		ConditionalActions: map[string][]string{
