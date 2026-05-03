@@ -1,28 +1,28 @@
 # tfgate
 
-Check IAM permissions before `terraform apply` on AWS.
+* `tfgate` is a CLI tool to check IAM permissions before `terraform apply` on AWS.
+* It parses your Terraform plan, computes the required IAM actions, and calls `iam:SimulatePrincipalPolicy` to verify your credentials — before apply.
+* `terraform plan` only requires read permissions, so permission errors are invisible until `apply` fails halfway through. `tfgate` catches them early.
 
-## Why
+## Features
 
-`terraform plan` succeeds but `terraform apply` fails with permission errors?
+* [x] Parse `terraform show -json` output
+* [x] Automatically derive required IAM actions from plan
+* [x] Simulate against current credentials via `iam:SimulatePrincipalPolicy`
+* [x] Support create / delete / update operations
+* [x] Text and JSON output (`--format`)
+* [x] AWS profile and region flags
+* [x] Exit code 1 on denied — CI-friendly
 
-`terraform plan` only requires read permissions, so it cannot detect missing write permissions until `apply` runs and fails halfway through.
+### Supported services
 
-`tfgate` parses your plan, computes the IAM actions each resource change requires, and calls `iam:SimulatePrincipalPolicy` to verify your current credentials can perform them — before you apply.
+EC2, S3, RDS, Aurora, DynamoDB, ElastiCache, ECS, EKS, Lambda, SNS, SQS, EventBridge, Kinesis, Step Functions, VPC, ALB/NLB, Route 53, CloudFront, API Gateway, IAM, KMS, Secrets Manager, ACM, CloudWatch, CloudTrail, SSM, EBS, EFS, CodeBuild, CodeDeploy, CodePipeline, CodeCommit, Glue, Athena
 
-## Install
+## Installation
 
-### From source
-
-```bash
+```
 go install github.com/komisan19/tfgate@latest
 ```
-
-### Pre-built binaries
-
-Download from [Releases](https://github.com/komisan19/tfgate/releases).
-
-Supported platforms: `linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`, `windows-amd64`.
 
 ## Usage
 
@@ -38,11 +38,6 @@ tfgate check plan.json
 ### Flags
 
 ```
-tfgate [--version] <command> [flags] [args]
-
-Global Flags:
-  --version         Print version and exit
-
 tfgate check [flags] <plan.json>
 
   --format string   Output format: text or json (default "text")
@@ -50,22 +45,7 @@ tfgate check [flags] <plan.json>
   --region string   AWS region
 ```
 
-### Examples
-
-```bash
-# JSON output (useful for programmatic processing)
-tfgate check --format json plan.json | jq .
-
-# Use a specific AWS profile and region
-tfgate check --profile staging --region us-east-1 plan.json
-
-# Print version
-tfgate --version
-```
-
 ## CI integration
-
-Example GitHub Actions step:
 
 ```yaml
 - name: Generate plan
@@ -76,29 +56,6 @@ Example GitHub Actions step:
 - name: Check IAM permissions
   run: tfgate check plan.json
 ```
-
-The job fails on exit code 1, blocking apply when permissions are insufficient.
-
-## Comparison with `aws_iam_principal_policy_simulation`
-
-Both tools call the same AWS API (`iam:SimulatePrincipalPolicy`), but they fit different workflows.
-
-|                  | `aws_iam_principal_policy_simulation` | `tfgate`                                          |
-| ---------------- | ------------------------------------- | ------------------------------------------------ |
-| Form             | Terraform data source (HCL)           | External CLI                                     |
-| Action discovery | Manual — you list actions in HCL      | Automatic — derived from `plan.json`             |
-| Plan integration | Inside Terraform run                  | Runs separately on `terraform show -json` output |
-| CI integration   | Via `terraform plan` exit code        | Independent step, language-agnostic              |
-| Maintenance      | Update HCL when resources change      | Update once in tfgate's rule registry             |
-| Coverage         | Whatever you write in HCL             | Resources covered by tfgate's registry            |
-| Best for         | Specific permission assertions        | Pre-apply sanity check across the entire plan    |
-
-## Supported resources
-
-- Resources
-  - [ ] `aws_s3_bucket` (create, delete)
-  - [ ] `aws_iam_role` (create, delete)
-  - [ ] `aws_instance` (create, delete)
 
 ## License
 
